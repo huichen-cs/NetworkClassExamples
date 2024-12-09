@@ -1,4 +1,7 @@
-"""Receive images sent by a sender using TCP."""
+"""Receive (via unicast) images sent by a sender using UDP.
+
+   show_gallery.py
+"""
 
 import argparse
 import io
@@ -41,6 +44,7 @@ class Gallery:
     def display_frame(self, i):
         self.ax.clear()
         self.ax.imshow(self.images[i])
+        self.ax.set_title(f"Image {i} at host {socket.gethostname()}")
 
     def display_gallery(self):
         self.anim = animation.FuncAnimation(

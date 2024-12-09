@@ -1,9 +1,16 @@
-"""Send images in a directory to a receiver using UDP."""
+"""Send (via unicast) images in a directory to a receiver using UDP.
+
+
+   send_gallery.py
+"""
 
 import argparse
 import glob
 import pathlib
 import socket
+import time
+
+WAIT_INTERVAL = 3
 
 
 def parse_cmdline():
@@ -47,11 +54,11 @@ def send_images(img_dir, destination):
             img_data = img_file.read()
 
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             s.sendto(img_data, destination)
             print(f"Image {img_idx}: sent {len(img_data)} bytes to {destination}.")
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        # Why do we need this? Is it a good way
+        time.sleep(WAIT_INTERVAL)
         s.sendto("".encode(), destination)
         print("End of Transmission")
 

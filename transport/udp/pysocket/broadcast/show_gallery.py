@@ -1,4 +1,7 @@
-"""Receive images sent by a sender using TCP."""
+"""Receive (via broadcast) images sent by a sender using UDP.
+
+   show_gallery.py
+"""
 
 import argparse
 import io
@@ -14,18 +17,18 @@ MAX_PLAYLOD_SIZE = 65535 - 20 - 8
 def parse_cmdline():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--listen_ip",
+        "--bind_ip",
         type=str,
         help="The IP address of the receiver.",
         default="localhost",
-        dest="listen_ip",
+        dest="bind_ip",
     )
     parser.add_argument(
-        "--listen_port",
+        "--bind_port",
         type=int,
         help="The port number of the receiver.",
         default=25000,
-        dest="listen_port",
+        dest="bind_port",
     )
     return parser.parse_args()
 
@@ -41,6 +44,7 @@ class Gallery:
     def display_frame(self, i):
         self.ax.clear()
         self.ax.imshow(self.images[i])
+        self.ax.set_title(f"Image {i} at host {socket.gethostname()}")
 
     def display_gallery(self):
         self.anim = animation.FuncAnimation(
@@ -54,30 +58,27 @@ class Gallery:
 
 
 def receive_and_show_images(end_point):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.bind(end_point)
-        sock.listen(1)
-        print(f"Listening on {end_point}")
+        print(f"bound to {end_point}")
         images = []
         idx = 0
         while True:
-            conn, _ = sock.accept()
-            with conn:
-                img_data = conn.recv(MAX_PLAYLOD_SIZE)
-                if not img_data:
-                    print("End of Transmission")
-                    break
-                print(f"Image {idx}: received {len(img_data)} bytes.")
-                img = mpimg.imread(io.BytesIO(img_data), "jpg")
-                images.append(img)
-                idx += 1
+            img_data = sock.recv(MAX_PLAYLOD_SIZE)
+            if not img_data:
+                print("End of Transmission")
+                break
+            print(f"Image {idx}: received {len(img_data)} bytes.")
+            img = mpimg.imread(io.BytesIO(img_data), "jpg")
+            images.append(img)
+            idx += 1
     gallery = Gallery(images)
     gallery.display_gallery()
 
 
 def main():
     args = parse_cmdline()
-    end_point = (args.listen_ip, args.listen_port)
+    end_point = (args.bind_ip, args.bind_port)
     receive_and_show_images(end_point)
     print("Done.")
 
