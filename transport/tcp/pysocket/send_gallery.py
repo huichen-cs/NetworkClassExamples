@@ -1,4 +1,7 @@
-"""Send images in a directory to a receiver using TCP."""
+"""Send images in a directory to a receiver using TCP.
+
+   send_gallery.py
+"""
 
 import argparse
 import glob

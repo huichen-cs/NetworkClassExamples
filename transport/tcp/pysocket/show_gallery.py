@@ -1,4 +1,7 @@
-"""Receive images sent by a sender using TCP."""
+"""Receive images sent by a sender using TCP.
+
+   show_gallery.py
+"""
 
 import argparse
 import io
@@ -8,7 +11,7 @@ from matplotlib import animation
 from matplotlib import image as mpimg
 from matplotlib import pyplot as plt
 
-MAX_PLAYLOD_SIZE = 65535 - 20 - 8
+MAX_BUF_SIZE = 65536
 
 
 def parse_cmdline():
@@ -41,6 +44,7 @@ class Gallery:
     def display_frame(self, i):
         self.ax.clear()
         self.ax.imshow(self.images[i])
+        self.ax.set_title(f"Image {i} at host {socket.gethostname()}")
 
     def display_gallery(self):
         self.anim = animation.FuncAnimation(
@@ -53,6 +57,16 @@ class Gallery:
         self.anim = None
 
 
+def receive_full_image(conn):
+    image_data = b""
+    while True:
+        image_chunk = conn.recv(MAX_BUF_SIZE)
+        if not image_chunk:
+            break
+        image_data += image_chunk
+
+    return image_data
+
 def receive_and_show_images(end_point):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(end_point)
@@ -63,7 +77,9 @@ def receive_and_show_images(end_point):
         while True:
             conn, _ = sock.accept()
             with conn:
-                img_data = conn.recv(MAX_PLAYLOD_SIZE)
+                # Why not just this?
+                # img_data = conn.recv(MAX_BUF_SIZE)
+                img_data = receive_full_image(conn)
                 if not img_data:
                     print("End of Transmission")
                     break
